@@ -406,12 +406,15 @@ export default function App() {
     setAllTimetable([]);
     setPermissionsList([]);
     setReadAdminNotifIds(new Set());
+    setLocalPermOverrides({});
     try {
+      localStorage.removeItem('greenwood_rbac_permissions');
       localStorage.removeItem(`greenwood_read_notifs_admin_${currentUser?.id || 1}`);
     } catch (e) {
       console.error(e);
     }
     await loadAllData();
+    await loadPermissionsData();
     return result;
   };
 

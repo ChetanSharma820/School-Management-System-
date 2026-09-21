@@ -221,6 +221,112 @@ async function supabaseDirectRequest(endpoint, options = {}) {
     return { success: true, message: 'Password reset successfully', data: updateData };
   }
 
+  // Dedicated handler for Master System Reset / Factory Wipe (Admin Exclusive)
+  if (routeName === 'system' && routeId === 'reset') {
+    const directHeaders = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json'
+    };
+
+    // 1. Wipe all operational relational tables in reverse dependency order
+    const wipeTables = [
+      'student_progress_remarks',
+      'student_grades_results',
+      'student_fees',
+      'teacher_salaries',
+      'attendance_regularizations',
+      'student_leaves',
+      'attendance',
+      'teacher_attendance_regularizations',
+      'teacher_leaves',
+      'teacher_attendance',
+      'subject_teachers_timetable',
+      'students',
+      'classes',
+      'teachers'
+    ];
+
+    for (const t of wipeTables) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/${t}?id=gt.0`, {
+          method: 'DELETE',
+          headers: directHeaders
+        });
+      } catch (err) {
+        console.warn(`Error wiping table ${t}:`, err);
+      }
+    }
+
+    // 2. Delete ONLY non-admin login credentials (teachers, students, custom accounts)
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/login_credentials?role=neq.admin`, {
+        method: 'DELETE',
+        headers: directHeaders
+      });
+    } catch (err) {
+      console.warn('Error wiping non-admin login credentials:', err);
+    }
+
+    // 3. Ensure Master Admin record exists, is active, and is completely preserved
+    try {
+      const adminCheckRes = await fetch(`${SUPABASE_URL}/rest/v1/login_credentials?role=eq.admin&limit=1`, {
+        method: 'GET',
+        headers: directHeaders
+      });
+      const adminCheckText = await adminCheckRes.text().catch(() => '[]');
+      let adminRows = [];
+      try { adminRows = JSON.parse(adminCheckText); } catch { adminRows = []; }
+
+      if (!Array.isArray(adminRows) || adminRows.length === 0) {
+        // If no admin row exists at all, insert the primary master admin
+        await fetch(`${SUPABASE_URL}/rest/v1/login_credentials`, {
+          method: 'POST',
+          headers: {
+            ...directHeaders,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            username: 'admin',
+            password: 'admin123',
+            role: 'admin',
+            status: 'active',
+            portal_access: true,
+            can_apply_leave: true,
+            can_view_grades: true,
+            can_download_fee_receipt: true,
+            can_post_remarks: true,
+            can_approve_leaves: true,
+            can_view_payroll: true
+          })
+        });
+      } else {
+        // Existing Admin credentials, password, and custom settings are kept completely intact!
+        // Just make sure admin account remains active and has portal_access = true
+        const adminId = adminRows[0].id;
+        await fetch(`${SUPABASE_URL}/rest/v1/login_credentials?id=eq.${adminId}`, {
+          method: 'PATCH',
+          headers: {
+            ...directHeaders,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            status: 'active',
+            portal_access: true
+          })
+        });
+      }
+    } catch (err) {
+      console.warn('Error checking/preserving master admin credentials:', err);
+    }
+
+    return {
+      success: true,
+      message: 'Entire system data successfully wiped. Master Admin credentials completely preserved.',
+      admin_preserved: true
+    };
+  }
+
   switch (routeName) {
     case 'teachers':
       supabaseTable = 'teachers';
