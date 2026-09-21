@@ -9466,5 +9466,378 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* ==========================================================================
+   STUDENT ATTENDANCE & DISPUTE REGULARIZATION MOBILE RESPONSIVE SUITE
+   ========================================================================== */
 
+/* Universal Table Styles for Student Portal */
+.portal-data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
 
+.portal-data-table th {
+  padding: 10px 14px;
+  background: var(--bg-secondary, #f8fafc);
+  color: var(--text-muted, #64748b);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  white-space: nowrap;
+}
+
+.portal-data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  vertical-align: middle;
+  color: var(--text-main, #0f172a);
+}
+
+.portal-data-table tr:hover td {
+  background: rgba(2, 132, 199, 0.03);
+}
+
+.btn-action-small {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-action-small:hover {
+  background: var(--bg-secondary, #f1f5f9);
+  border-color: #cbd5e1;
+}
+
+.duration-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.teacher-review-note {
+  padding: 6px 10px;
+  background: #f8fafc;
+  border-left: 3px solid #0284c7;
+  border-radius: 4px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #334155;
+}
+
+/* Tablet & Mobile Layout Breakpoints (<= 992px) */
+@media (max-width: 992px) {
+  .calendar-details-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+/* Standard Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  /* Student Portal Body & Tabs */
+  .portal-nav-tabs {
+    padding: 0 12px !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .portal-nav-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .portal-tab-btn {
+    padding: 10px 14px !important;
+    font-size: 12.5px !important;
+    gap: 6px !important;
+  }
+
+  .portal-content-body {
+    padding: 14px 10px 36px !important;
+  }
+
+  .portal-section-card {
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .section-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .section-card-header h3 {
+    font-size: 16px !important;
+  }
+
+  .section-card-header button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Attendance Calendar Tracker Root */
+  .attendance-calendar-tracker-root {
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Quick Actions Toolbar in Tracker */
+  .attendance-calendar-tracker-root > .portal-section-card:first-of-type {
+    padding: 12px 14px !important;
+  }
+
+  .attendance-calendar-tracker-root > .portal-section-card:first-of-type > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .attendance-calendar-tracker-root > .portal-section-card:first-of-type > div > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .attendance-calendar-tracker-root > .portal-section-card:first-of-type button {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 8px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  /* Recent Attendance Days Carousel */
+  .attendance-calendar-tracker-root > div:has(.recent-day-card) > div:last-child {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    scrollbar-width: none !important;
+  }
+
+  .attendance-calendar-tracker-root > div:has(.recent-day-card) > div:last-child::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .recent-day-card {
+    flex: 0 0 135px !important;
+    min-width: 135px !important;
+    scroll-snap-align: start !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Main Calendar Card & Month Navigation Header */
+  .calendar-details-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .calendar-details-grid .portal-section-card {
+    padding: 16px 12px !important;
+  }
+
+  .calendar-details-grid .portal-section-card:first-child > div:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .calendar-details-grid .portal-section-card:first-child > div:first-child > div:last-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .calendar-details-grid .portal-section-card:first-child select {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+
+  /* Calendar Weekday Column Headers (Sun-Sat) */
+  .calendar-details-grid .portal-section-card:first-child > div:nth-child(2) {
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .calendar-details-grid .portal-section-card:first-child > div:nth-child(2) > div {
+    font-size: 10.5px !important;
+    padding: 6px 0 !important;
+  }
+
+  /* Calendar Date Grid Cells */
+  .calendar-details-grid .portal-section-card:first-child > div:nth-child(3) {
+    gap: 4px !important;
+  }
+
+  .calendar-date-cell {
+    min-height: 56px !important;
+    padding: 5px 3px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .calendar-date-cell > div:first-child > span:first-child {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 11.5px !important;
+  }
+
+  .calendar-date-cell > div:first-child > span:last-child {
+    width: 7px !important;
+    height: 7px !important;
+  }
+
+  .calendar-date-cell > div:last-child > div:first-child {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Status Filter Pills Bar */
+  .filter-pills-bar {
+    display: flex !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    padding-bottom: 6px !important;
+    scrollbar-width: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 12px !important;
+  }
+
+  .filter-pills-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .filter-pill {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+    border-radius: 9999px !important;
+  }
+
+  /* Regularization Dispute Modal on Mobile */
+  .regularize-modal-box,
+  .modal-overlay .modal-content {
+    max-width: 95vw !important;
+    width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    padding: 18px 14px !important;
+    border-radius: 14px !important;
+    margin: auto !important;
+  }
+
+  .regularize-modal-box .form-grid,
+  .modal-overlay .modal-content form > div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .regularize-modal-box .modal-actions,
+  .modal-overlay .modal-content form > div:last-child {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-top: 14px !important;
+  }
+
+  .regularize-modal-box .modal-actions button,
+  .modal-overlay .modal-content form > div:last-child button {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+  }
+}
+
+/* Small Mobile Screens (<= 480px) */
+@media (max-width: 480px) {
+  .attendance-calendar-tracker-root {
+    gap: 10px !important;
+  }
+
+  .attendance-calendar-tracker-root > .portal-section-card:first-of-type > div > div:last-child {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .recent-day-card {
+    flex: 0 0 120px !important;
+    min-width: 120px !important;
+    padding: 8px 10px !important;
+  }
+
+  /* Calendar Date Grid Cells on Compact Screens */
+  .calendar-details-grid .portal-section-card:first-child > div:nth-child(3) {
+    gap: 3px !important;
+  }
+
+  .calendar-date-cell {
+    min-height: 48px !important;
+    padding: 3px 2px !important;
+    border-radius: 5px !important;
+  }
+
+  .calendar-date-cell > div:first-child > span:first-child {
+    width: 17px !important;
+    height: 17px !important;
+    font-size: 10px !important;
+  }
+
+  .calendar-date-cell > div:first-child > span:last-child {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  .calendar-date-cell > div:last-child > div:first-child {
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Hide raw timestamp in tiny cells to prevent horizontal layout distortion */
+  .calendar-date-cell > div:last-child > div:nth-child(2) {
+    display: none !important;
+  }
+
+  /* Date Inspection Card details */
+  .calendar-details-grid > div:last-child .portal-section-card:first-child div[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+  }
+
+  .calendar-details-grid > div:last-child .portal-section-card:first-child button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
