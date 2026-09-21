@@ -50,6 +50,7 @@ import {
   UserPlus,
   Check,
   X,
+  Menu,
   Bell,
   Calendar,
   Layers,
@@ -59,6 +60,9 @@ import {
 } from 'lucide-react';
 
 export default function App() {
+  // Mobile Drawer Navigation State
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   // Authentication & RBAC Session State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -1527,8 +1531,14 @@ export default function App() {
   // Administrator view
   return (
     <div className="app-container">
+      {/* Mobile Drawer Backdrop */}
+      <div 
+        className={`sidebar-backdrop ${mobileNavOpen ? 'active' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+      />
+
       {/* 1. Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${mobileNavOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="brand-icon">
             <GraduationCap size={24} />
@@ -1537,6 +1547,14 @@ export default function App() {
             <span>EduCore OS</span>
             <span className="brand-badge">Admin Master Console</span>
           </div>
+          <button 
+            type="button" 
+            className="sidebar-close-btn" 
+            onClick={() => setMobileNavOpen(false)}
+            title="Close navigation"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="nav-section">
@@ -1544,7 +1562,7 @@ export default function App() {
           
           <button 
             className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => { setActiveTab('dashboard'); setMobileNavOpen(false); }}
           >
             <BookOpen size={18} />
             <span>Dashboard</span>
@@ -1552,7 +1570,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'students' ? 'active' : ''}`}
-            onClick={() => setActiveTab('students')}
+            onClick={() => { setActiveTab('students'); setMobileNavOpen(false); }}
           >
             <Users size={18} />
             <span>Student Directory</span>
@@ -1560,7 +1578,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'class-groups' ? 'active' : ''}`}
-            onClick={() => setActiveTab('class-groups')}
+            onClick={() => { setActiveTab('class-groups'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'class-groups' ? '#38bdf8' : '#60a5fa' }}
           >
             <Layers size={18} />
@@ -1569,7 +1587,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'teachers' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teachers')}
+            onClick={() => { setActiveTab('teachers'); setMobileNavOpen(false); }}
           >
             <UserCheck size={18} />
             <span>Faculty & Staff</span>
@@ -1579,7 +1597,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'fees' ? 'active' : ''}`}
-            onClick={() => setActiveTab('fees')}
+            onClick={() => { setActiveTab('fees'); setMobileNavOpen(false); }}
           >
             <Receipt size={18} />
             <span>Fee Receipts</span>
@@ -1587,7 +1605,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'salaries' ? 'active' : ''}`}
-            onClick={() => setActiveTab('salaries')}
+            onClick={() => { setActiveTab('salaries'); setMobileNavOpen(false); }}
           >
             <Wallet size={18} />
             <span>Salary Pay-Slips</span>
@@ -1597,7 +1615,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attendance')}
+            onClick={() => { setActiveTab('attendance'); setMobileNavOpen(false); }}
           >
             <CalendarCheck size={18} />
             <span>Attendance</span>
@@ -1605,7 +1623,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'grades' ? 'active' : ''}`}
-            onClick={() => setActiveTab('grades')}
+            onClick={() => { setActiveTab('grades'); setMobileNavOpen(false); }}
           >
             <Award size={18} />
             <span>Gradebook</span>
@@ -1613,7 +1631,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'excel' ? 'active' : ''}`}
-            onClick={() => setActiveTab('excel')}
+            onClick={() => { setActiveTab('excel'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'excel' ? '#34d399' : '#10b981' }}
           >
             <FileSpreadsheet size={18} />
@@ -1624,7 +1642,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'student-leaves' ? 'active' : ''}`}
-            onClick={() => setActiveTab('student-leaves')}
+            onClick={() => { setActiveTab('student-leaves'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'student-leaves' ? '#38bdf8' : '#94a3b8' }}
           >
             <CalendarCheck size={18} />
@@ -1636,7 +1654,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'student-regularizations' ? 'active' : ''}`}
-            onClick={() => setActiveTab('student-regularizations')}
+            onClick={() => { setActiveTab('student-regularizations'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'student-regularizations' ? '#34d399' : '#94a3b8' }}
           >
             <Clock size={18} />
@@ -1650,7 +1668,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'teacher-leaves' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teacher-leaves')}
+            onClick={() => { setActiveTab('teacher-leaves'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'teacher-leaves' ? '#38bdf8' : '#94a3b8' }}
           >
             <CalendarCheck size={18} />
@@ -1662,7 +1680,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'teacher-regularizations' ? 'active' : ''}`}
-            onClick={() => setActiveTab('teacher-regularizations')}
+            onClick={() => { setActiveTab('teacher-regularizations'); setMobileNavOpen(false); }}
             style={{ color: activeTab === 'teacher-regularizations' ? '#34d399' : '#94a3b8' }}
           >
             <Clock size={18} />
@@ -1674,7 +1692,7 @@ export default function App() {
 
           <button 
             className={`nav-btn ${activeTab === 'permissions' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('permissions'); loadPermissionsData(); }}
+            onClick={() => { setActiveTab('permissions'); setMobileNavOpen(false); loadPermissionsData(); }}
             style={{ color: activeTab === 'permissions' ? '#f59e0b' : '#fbbf24' }}
           >
             <ShieldAlert size={18} />
@@ -1699,6 +1717,15 @@ export default function App() {
       <main className="main-content">
         {/* Top Header */}
         <header className="top-header">
+          <button 
+            type="button" 
+            className="mobile-nav-toggle"
+            onClick={() => setMobileNavOpen(prev => !prev)}
+            title="Toggle Navigation Menu"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
           <div className="page-title-box">
             <h1>
               {activeTab === 'dashboard' && 'School Overview Dashboard'}

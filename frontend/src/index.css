@@ -8882,3 +8882,572 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* ==========================================================================
+   MULTI-DEVICE RESPONSIVE SYSTEM (DESKTOP, TABLET, MOBILE)
+   ========================================================================== */
+
+/* Mobile Hamburger & Backdrop Controls (Hidden on Desktop) */
+.mobile-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.mobile-nav-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.mobile-nav-toggle:active {
+  transform: scale(0.95);
+}
+
+.sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.sidebar-close-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-backdrop.active,
+.sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Responsive Table Wrapper with Smooth Horizontal Touch Scrolling */
+.table-wrapper,
+.portal-table-container,
+.ledger-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  position: relative;
+}
+
+.table-wrapper table,
+.portal-data-table {
+  min-width: 650px;
+}
+
+/* --------------------------------------------------------------------------
+   1. LAPTOPS & SMALL DESKTOPS (<= 1200px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1200px) {
+  .top-header {
+    padding: 0 20px;
+  }
+  .stats-grid,
+  .kpi-grid,
+  .quick-stats-grid,
+  .hero-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px;
+  }
+  .ten-test-stats-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px;
+  }
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. TABLETS & IPADS (<= 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .mobile-nav-toggle {
+    display: inline-flex !important;
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex !important;
+  }
+
+  /* Off-canvas Navigation Drawer */
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 290px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s ease !important;
+    box-shadow: none !important;
+    overflow-y: auto !important;
+  }
+
+  .sidebar.mobile-open,
+  .sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 14px 0 50px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  .main-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .top-header {
+    height: 64px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .header-title h1,
+  .page-title-box h1 {
+    font-size: 17px !important;
+  }
+
+  .header-title p,
+  .page-title-box p {
+    font-size: 11.5px !important;
+  }
+
+  .portal-body,
+  .dashboard-content,
+  .content-wrapper,
+  .content-body,
+  .page-content {
+    padding: 16px !important;
+  }
+
+  /* Grids & Cards */
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .stats-grid,
+  .kpi-grid,
+  .quick-stats-grid,
+  .hero-summary-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .timecard-stats-row,
+  .salary-overview-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Profile Layouts */
+  .teacher-profile-grid,
+  .profile-layout-grid,
+  .profile-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Login Card Responsiveness */
+  .login-wrapper {
+    grid-template-columns: 1fr !important;
+    max-width: 520px !important;
+    margin: 20px 14px !important;
+  }
+
+  .login-hero-card {
+    padding: 30px 24px !important;
+    gap: 20px !important;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .login-card-glass {
+    padding: 32px 24px !important;
+  }
+
+  /* Toolbars & Filter Bars */
+  .toolbar,
+  .filter-row,
+  .gradebook-toolbar,
+  .gradebook-selectors,
+  .attendance-toolbar,
+  .hub-toolbar,
+  .roster-filter-bar {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .gradebook-selectors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .gradebook-selector-item {
+    flex: 1 1 180px;
+  }
+
+  /* Modals on Tablets */
+  .modal-container,
+  .modal-dialog,
+  .modal-box,
+  .modal-content,
+  .settings-modal-dialog,
+  .rbac-modal-dialog,
+  .salary-slip-modal-dialog,
+  .permission-modal-container,
+  .assign-faculty-modal,
+  .class-modal {
+    max-width: 92vw !important;
+    width: 92vw !important;
+    margin: 16px auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. MOBILE PHONES (<= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .top-header {
+    height: 60px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .header-title,
+  .page-title-box {
+    max-width: calc(100vw - 190px);
+    overflow: hidden;
+  }
+
+  .header-title h1,
+  .page-title-box h1 {
+    font-size: 15px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-title p,
+  .page-title-box p {
+    display: none !important;
+  }
+
+  .header-actions {
+    gap: 6px !important;
+  }
+
+  .user-badge-text,
+  .user-badge-info,
+  .user-fullname,
+  .user-role-tag {
+    display: none !important;
+  }
+
+  .user-badge {
+    padding: 6px !important;
+  }
+
+  .settings-btn span,
+  .sign-out-btn span,
+  .portal-settings-btn span,
+  .portal-logout-btn span {
+    display: none !important;
+  }
+
+  .settings-btn,
+  .sign-out-btn,
+  .portal-settings-btn,
+  .portal-logout-btn {
+    padding: 7px 9px !important;
+    min-width: 36px;
+    justify-content: center;
+  }
+
+  .notification-dropdown {
+    width: calc(100vw - 24px) !important;
+    right: -70px !important;
+    max-width: 360px !important;
+  }
+
+  .portal-body,
+  .dashboard-content,
+  .content-wrapper,
+  .content-body,
+  .page-content {
+    padding: 12px !important;
+  }
+
+  /* KPI Summary Cards */
+  .stats-grid,
+  .kpi-grid,
+  .quick-stats-grid,
+  .hero-summary-grid,
+  .ten-test-stats-strip,
+  .salary-overview-grid,
+  .timecard-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .stat-card,
+  .kpi-card,
+  .ten-test-stat-card {
+    padding: 12px !important;
+  }
+
+  .stat-val,
+  .kpi-value {
+    font-size: 18px !important;
+  }
+
+  .stat-label,
+  .kpi-info h3 {
+    font-size: 11px !important;
+  }
+
+  /* Responsive Scrollable Tables */
+  .table-wrapper,
+  .card-table-wrapper,
+  .data-table-container,
+  .table-responsive {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .table-wrapper table,
+  .card-table-wrapper table,
+  .data-table-container table,
+  table.data-table,
+  table.custom-table,
+  table.roster-table {
+    min-width: 620px !important;
+  }
+
+  /* Full Width Form Controls & Filters */
+  .toolbar-search,
+  .search-input-wrap,
+  .filter-select,
+  .date-picker-wrap {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .filter-bar,
+  .search-bar-row,
+  .action-button-group {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .decision-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Grades & Scorecards Grid */
+  .grades-grid,
+  .reports-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .subject-grade-card {
+    padding: 14px !important;
+  }
+
+  .grade-card-top-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Timetable View on Mobile */
+  .timetable-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .timetable-day-column {
+    width: 100% !important;
+  }
+
+  /* Modals on Mobile */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-container,
+  .modal-dialog,
+  .modal-box,
+  .modal-content,
+  .settings-modal-dialog,
+  .rbac-modal-dialog,
+  .salary-slip-modal-dialog,
+  .permission-modal-container,
+  .assign-faculty-modal,
+  .class-modal {
+    max-width: 100vw !important;
+    width: 100% !important;
+    max-height: 94vh !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-header {
+    padding: 14px 16px !important;
+  }
+
+  .modal-body {
+    padding: 14px 16px !important;
+    max-height: calc(94vh - 130px) !important;
+    overflow-y: auto !important;
+  }
+
+  .modal-footer {
+    padding: 12px 16px !important;
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+  }
+
+  .modal-footer button {
+    width: 100% !important;
+  }
+
+  /* Settings Modal Tabs */
+  .settings-modal-body {
+    flex-direction: column !important;
+  }
+
+  .settings-sidebar {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 8px !important;
+    gap: 4px !important;
+  }
+
+  .settings-nav-btn {
+    white-space: nowrap !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .settings-content {
+    padding: 14px !important;
+  }
+
+  /* Class Groups Hub */
+  .class-groups-hub-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .class-groups-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Attendance Punch Card */
+  .timecard-punch-box {
+    padding: 16px !important;
+  }
+
+  .timecard-clock-display {
+    font-size: 28px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. SMALL MOBILE SCREENS (<= 480px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .stats-grid,
+  .kpi-grid,
+  .quick-stats-grid,
+  .hero-summary-grid,
+  .ten-test-stats-strip,
+  .salary-overview-grid,
+  .timecard-stats-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .brand-title span:first-child {
+    font-size: 15px;
+  }
+
+  .brand-badge {
+    font-size: 9px;
+  }
+
+  .marks-display {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 4px;
+  }
+
+  .login-wrapper {
+    margin: 10px 8px !important;
+  }
+
+  .login-hero-card,
+  .login-card-glass {
+    padding: 20px 16px !important;
+  }
+
+  .hero-heading,
+  .login-title {
+    font-size: 19px !important;
+  }
+}
+
+
+

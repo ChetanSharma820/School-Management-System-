@@ -36,7 +36,8 @@ import {
   Filter,
   Sliders,
   DollarSign,
-  UserCheck
+  UserCheck,
+  Menu
 } from 'lucide-react';
 import { api } from './api';
 import SettingsModal from './SettingsModal';
@@ -46,6 +47,7 @@ import StudentAttendanceCalendarTracker from './StudentAttendanceCalendarTracker
 
 export default function StudentPortal({ currentUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'fees' | 'grades' | 'attendance' | 'timetable' | 'teachers' | 'leaves' | 'remarks'
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [studentData, setStudentData] = useState(null);
   const [fees, setFees] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -913,8 +915,15 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
     return (
       <div className="app-container">
+        {/* Mobile Drawer Backdrop */}
+        <div 
+          className={`sidebar-backdrop ${mobileNavOpen ? 'active' : ''}`}
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+
         {/* 1. Left Sidebar Navigation */}
-        <aside className="sidebar">
+        <aside className={`sidebar ${mobileNavOpen ? 'mobile-open' : ''}`}>
           <div className="sidebar-header">
             <div className="brand-icon">
               <GraduationCap size={24} />
@@ -923,13 +932,20 @@ export default function StudentPortal({ currentUser, onLogout }) {
               <span>EduCore OS</span>
               <span className="brand-badge">Student Portal</span>
             </div>
+            <button 
+              className="sidebar-close-btn"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close Navigation Menu"
+            >
+              <X size={20} />
+            </button>
           </div>
 
           <div className="nav-section">
             <div className="nav-label">Academics & Records</div>
             <button
               className={`nav-btn ${activeTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveTab('profile')}
+              onClick={() => { setActiveTab('profile'); setMobileNavOpen(false); }}
             >
               <User size={18} />
               <span>My Profile</span>
@@ -937,7 +953,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'timetable' ? 'active' : ''}`}
-              onClick={() => setActiveTab('timetable')}
+              onClick={() => { setActiveTab('timetable'); setMobileNavOpen(false); }}
             >
               <Clock size={18} />
               <span>Class Timetable</span>
@@ -945,7 +961,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'grades' ? 'active' : ''}`}
-              onClick={() => setActiveTab('grades')}
+              onClick={() => { setActiveTab('grades'); setMobileNavOpen(false); }}
             >
               <Award size={18} />
               <span>Gradebook & 10-Tests</span>
@@ -953,7 +969,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'attendance' ? 'active' : ''}`}
-              onClick={() => setActiveTab('attendance')}
+              onClick={() => { setActiveTab('attendance'); setMobileNavOpen(false); }}
             >
               <CalendarCheck size={18} />
               <span>Attendance & Dispute</span>
@@ -966,7 +982,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'teachers' ? 'active' : ''}`}
-              onClick={() => setActiveTab('teachers')}
+              onClick={() => { setActiveTab('teachers'); setMobileNavOpen(false); }}
             >
               <BookOpen size={18} />
               <span>Subject Faculty</span>
@@ -975,7 +991,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
             <div className="nav-label" style={{ marginTop: '12px' }}>Requests & Services</div>
             <button
               className={`nav-btn ${activeTab === 'leaves' ? 'active' : ''}`}
-              onClick={() => setActiveTab('leaves')}
+              onClick={() => { setActiveTab('leaves'); setMobileNavOpen(false); }}
             >
               <FileText size={18} />
               <span>Leave Applications</span>
@@ -988,7 +1004,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'fees' ? 'active' : ''}`}
-              onClick={() => setActiveTab('fees')}
+              onClick={() => { setActiveTab('fees'); setMobileNavOpen(false); }}
             >
               <CreditCard size={18} />
               <span>Fee Ledger & Slips</span>
@@ -996,7 +1012,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
             <button
               className={`nav-btn ${activeTab === 'remarks' ? 'active' : ''}`}
-              onClick={() => setActiveTab('remarks')}
+              onClick={() => { setActiveTab('remarks'); setMobileNavOpen(false); }}
             >
               <MessageSquare size={18} />
               <span>Teacher Remarks</span>
@@ -1020,6 +1036,15 @@ export default function StudentPortal({ currentUser, onLogout }) {
         <main className="main-content">
           {/* Top Header */}
           <header className="top-header">
+            <button 
+              className="mobile-nav-toggle"
+              onClick={() => setMobileNavOpen(prev => !prev)}
+              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+              title="Toggle Navigation Menu"
+            >
+              {mobileNavOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+
             <div className="page-title-box">
               <h1>{getTabTitle(activeTab)}</h1>
               <p>{getTabSubtitle(activeTab)}</p>
