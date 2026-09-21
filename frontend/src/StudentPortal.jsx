@@ -141,11 +141,42 @@ export default function StudentPortal({ currentUser, onLogout }) {
   }, [classTeacher]);
 
   useEffect(() => {
-    loadStudentInfo();
+    loadStudentInfo(false);
+
+    // 1. Live Background Polling every 5 seconds when tab is active
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadStudentInfo(true);
+      }
+    }, 5000);
+
+    // 2. Instant silent sync when user switches back to browser tab
+    const handleFocus = () => {
+      loadStudentInfo(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadStudentInfo(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [studentId, currentUser]);
 
-  const loadStudentInfo = async () => {
-    setLoading(true);
+  // Silently re-sync when switching tabs
+  useEffect(() => {
+    loadStudentInfo(true);
+  }, [activeTab]);
+
+  const loadStudentInfo = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const effectiveStudentId = Number(currentUser?.student_id || currentUser?.students?.id || (currentUser?.role === 'student' ? currentUser?.id : 1)) || 1;
       const [studentsRes, feesRes, gradesRes, remarksRes, attRes, leavesRes, regRes] = await Promise.allSettled([
@@ -210,7 +241,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
     } catch (err) {
       console.error('Error loading student portal data:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

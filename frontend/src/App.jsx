@@ -334,31 +334,44 @@ export default function App() {
     bank_account_last4: '5678'
   });
 
-  // Load Initial Data from C++ Backend whenever activeTab changes
+  // Load Initial Data whenever activeTab or currentUser changes, plus 5s Real-Time Polling
   useEffect(() => {
-    loadAllData();
+    loadAllData(false);
+
+    // 1. Live Background Polling every 5 seconds when tab is active
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadAllData(true);
+      }
+    }, 5000);
+
+    // 2. Instant silent sync when user switches back to browser tab
+    const handleFocus = () => {
+      loadAllData(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadAllData(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUser]);
+
+  // Silently re-sync when switching tabs
+  useEffect(() => {
+    loadAllData(true);
   }, [activeTab]);
 
-  useEffect(() => {
-    if (classes.length > 0 && (!newStudent.class_id || !classes.some(c => c.id === parseInt(newStudent.class_id)))) {
-      setNewStudent(prev => ({ ...prev, class_id: classes[0].id }));
-    }
-  }, [classes]);
-
-  useEffect(() => {
-    if (students.length > 0 && (!newFee.student_id || !students.some(s => s.id === newFee.student_id))) {
-      setNewFee(prev => ({ ...prev, student_id: students[0].id }));
-    }
-  }, [students]);
-
-  useEffect(() => {
-    if (teachers.length > 0 && (!newSalary.teacher_id || !teachers.some(t => t.id === newSalary.teacher_id))) {
-      setNewSalary(prev => ({ ...prev, teacher_id: teachers[0].id }));
-    }
-  }, [teachers]);
-
-  const loadAllData = async () => {
-    setLoading(true);
+  const loadAllData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [stuRes, tchRes, feeRes, salRes, clsRes, tlRes, trRes, ttRes, slRes, srRes] = await Promise.all([
         api.getStudents().catch(() => []),
@@ -387,7 +400,7 @@ export default function App() {
       console.error('Server offline or error:', err);
       setServerOnline(false);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 

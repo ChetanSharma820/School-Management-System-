@@ -395,16 +395,37 @@ async function supabaseDirectRequest(endpoint, options = {}) {
       break;
   }
 
+// PostgREST Query Parameter Formatter (transforms student_id=1 to student_id=eq.1, handles date ranges)
+function formatPostgrestQuery(searchStr, tableName) {
+  if (!searchStr) return '';
+  const params = new URLSearchParams(searchStr);
+  const out = [];
+  params.forEach((val, key) => {
+    if (!val && val !== '0') return;
+    if (/^(eq|neq|gt|gte|lt|lte|like|ilike|in|is|not)\./.test(val)) {
+      out.push(`${key}=${val}`);
+    } else if (key === 'month') {
+      const dateCol = tableName === 'teacher_attendance' ? 'attendance_date' : 'date';
+      out.push(`${dateCol}=gte.${val}-01&${dateCol}=lte.${val}-31`);
+    } else {
+      out.push(`${key}=eq.${encodeURIComponent(val)}`);
+    }
+  });
+  return out.join('&');
+}
+
   if (routeId) {
     idParam = `id=eq.${routeId}`;
   }
 
+  const formattedSearch = formatPostgrestQuery(searchStr, supabaseTable);
+
   let finalQuery = '';
   if (idParam) {
     finalQuery = idParam;
-    if (searchStr) finalQuery += `&${searchStr}`;
-  } else if (searchStr) {
-    finalQuery = `${queryParams}&${searchStr}`;
+    if (formattedSearch) finalQuery += `&${formattedSearch}`;
+  } else if (formattedSearch) {
+    finalQuery = `${queryParams}&${formattedSearch}`;
   } else {
     finalQuery = queryParams;
   }
@@ -434,6 +455,13 @@ async function supabaseDirectRequest(endpoint, options = {}) {
       return data[0] || { success: true };
     }
     return data;
+  }
+
+  if (data && data.code && !Array.isArray(data)) {
+    console.warn(`Supabase PostgREST notice (${data.code}): ${data.message || ''}`, fullUrl);
+    if (method === 'GET') {
+      return [];
+    }
   }
 
   return data;

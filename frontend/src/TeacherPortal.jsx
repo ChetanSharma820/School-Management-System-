@@ -455,11 +455,42 @@ export default function TeacherPortal({ currentUser, onLogout }) {
   }, []);
 
   useEffect(() => {
-    loadTeacherData();
+    loadTeacherData(false);
+
+    // 1. Live Background Polling every 5 seconds when tab is active
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadTeacherData(true);
+      }
+    }, 5000);
+
+    // 2. Instant silent sync when user switches back to browser tab
+    const handleFocus = () => {
+      loadTeacherData(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadTeacherData(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [teacherId, currentUser]);
 
-  const loadTeacherData = async () => {
-    setLoading(true);
+  // Silently re-sync when switching tabs
+  useEffect(() => {
+    loadTeacherData(true);
+  }, [activeTab]);
+
+  const loadTeacherData = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       // First fetch teacher identity list to resolve exact targetTid
       const rawTeachers = await api.getTeachers().catch(() => []);
@@ -585,7 +616,7 @@ export default function TeacherPortal({ currentUser, onLogout }) {
     } catch (err) {
       console.error('Error loading teacher portal data:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
