@@ -233,6 +233,10 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
         setError('Authentication failed. Please verify your credentials.');
       }
     } catch (err) {
+      if (String(err.message || '').includes('Access Denied')) {
+        setError(err.message);
+        return;
+      }
       const fallbackUser = getClientFallbackUser(u);
       if (fallbackUser) {
         onLoginSuccess(fallbackUser);

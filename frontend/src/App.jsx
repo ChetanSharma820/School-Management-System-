@@ -879,24 +879,29 @@ export default function App() {
   const handleToggleAccountStatus = async (user) => {
     const isCurrentlySuspended = user.status === 'suspended' || localPermOverrides[user.id]?.status === 'suspended';
     const newStatus = isCurrentlySuspended ? 'active' : 'suspended';
+    const isPortalActive = newStatus === 'active';
     const msg = newStatus === 'suspended'
       ? `Suspend account for ${user.username}? They will be blocked from logging into the portal.`
       : `Re-activate account for ${user.username}? They will be granted login access.`;
     if (!window.confirm(msg)) return;
 
     try {
-      await api.updatePermission(user.id, { status: newStatus });
+      await api.updatePermission(user.id, {
+        status: newStatus,
+        portal_access: isPortalActive
+      });
+      await loadPermissionsData();
     } catch (err) {
       console.warn('Backend update error, recording to local state:', err);
     }
 
-    setPermissionsList(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+    setPermissionsList(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus, portal_access: isPortalActive } : u));
     const updated = {
       ...localPermOverrides,
       [user.id]: {
         ...(localPermOverrides[user.id] || {}),
         status: newStatus,
-        portal_access: newStatus === 'active'
+        portal_access: isPortalActive
       }
     };
     setLocalPermOverrides(updated);
@@ -906,9 +911,18 @@ export default function App() {
   // Save Granular Permissions from Modal
   const handleSaveUserPermissions = async (user, newPerms) => {
     try {
-      if (newPerms.status && newPerms.status !== user.status) {
-        await api.updatePermission(user.id, { status: newPerms.status });
-      }
+      const updatePayload = {
+        status: newPerms.status || 'active',
+        portal_access: newPerms.portal_access !== undefined ? newPerms.portal_access : (newPerms.status !== 'suspended'),
+        can_apply_leave: newPerms.can_apply_leave !== undefined ? newPerms.can_apply_leave : true,
+        can_view_grades: newPerms.can_view_grades !== undefined ? newPerms.can_view_grades : true,
+        can_download_fee_receipt: newPerms.can_download_fee_receipt !== undefined ? newPerms.can_download_fee_receipt : true,
+        can_post_remarks: newPerms.can_post_remarks !== undefined ? newPerms.can_post_remarks : true,
+        can_approve_leaves: newPerms.can_approve_leaves !== undefined ? newPerms.can_approve_leaves : true,
+        can_view_payroll: newPerms.can_view_payroll !== undefined ? newPerms.can_view_payroll : true
+      };
+      await api.updatePermission(user.id, updatePayload);
+      await loadPermissionsData();
     } catch (err) {
       console.warn('Backend update note:', err);
     }
@@ -924,7 +938,7 @@ export default function App() {
     setLocalPermOverrides(updated);
     localStorage.setItem('greenwood_rbac_permissions', JSON.stringify(updated));
     setManagingPermissionsUser(null);
-    alert(`Permissions successfully updated for ${user.username}!`);
+    alert(`Permissions & status successfully updated and saved to database for ${user.username}!`);
   };
 
   // Delete User Credential (Admin Exclusive)
