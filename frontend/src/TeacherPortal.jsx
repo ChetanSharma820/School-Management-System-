@@ -46,7 +46,7 @@ import {
   UserCheck,
   Menu
 } from 'lucide-react';
-import { api, calculateSalaryBreakdown } from './api';
+import { api, calculateSalaryBreakdown, syncBus } from './api';
 import SettingsModal from './SettingsModal';
 
 export default function TeacherPortal({ currentUser, onLogout }) {
@@ -457,14 +457,20 @@ export default function TeacherPortal({ currentUser, onLogout }) {
   useEffect(() => {
     loadTeacherData(false);
 
-    // 1. Live Background Polling every 5 seconds when tab is active
+    // 1. High-Speed Background Polling (every 3 seconds when tab is active)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         loadTeacherData(true);
       }
-    }, 5000);
+    }, 3000);
 
-    // 2. Instant silent sync when user switches back to browser tab
+    // 2. Instant Cross-Tab & Cross-Component Real-Time Event Sync
+    const unsubscribe = syncBus.subscribe((evt) => {
+      // Trigger instant non-blocking silent re-fetch on any mutation
+      loadTeacherData(true);
+    });
+
+    // 3. Instant silent sync when user switches back to browser tab
     const handleFocus = () => {
       loadTeacherData(true);
     };
@@ -479,6 +485,7 @@ export default function TeacherPortal({ currentUser, onLogout }) {
 
     return () => {
       clearInterval(pollInterval);
+      unsubscribe();
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -1258,13 +1265,12 @@ export default function TeacherPortal({ currentUser, onLogout }) {
           : item
       ));
       setReviewSuccess(`Leave application has been marked as ${reviewDecision.toUpperCase()} and saved to the database!`);
-      // Reload from DB after 1.5s to confirm persisted state
+      loadTeacherData(true);
       setTimeout(() => {
         setSelectedLeaveReview(null);
         setReviewSuccess('');
         setReviewRemarks('');
-        loadTeacherData();
-      }, 1500);
+      }, 700);
     } catch (err) {
       alert('Error updating leave status: ' + err.message);
     } finally {
@@ -1311,13 +1317,12 @@ export default function TeacherPortal({ currentUser, onLogout }) {
           : item
       ));
       setRegReviewSuccess(`Attendance regularization has been ${regDecision.toUpperCase()} and persisted to the database!`);
-      // Reload from DB after 1.5s to confirm persisted state
+      loadTeacherData(true);
       setTimeout(() => {
         setSelectedRegReview(null);
         setRegReviewSuccess('');
         setRegRemarks('');
-        loadTeacherData();
-      }, 1500);
+      }, 700);
     } catch (err) {
       alert('Error updating regularization status: ' + err.message);
     } finally {
@@ -1361,10 +1366,11 @@ export default function TeacherPortal({ currentUser, onLogout }) {
       };
       setRemarks([newEntry, ...remarks]);
       setNewRemarkText('');
+      loadTeacherData(true);
       setTimeout(() => {
         setRemarkModalStudent(null);
         setRemarkSuccess('');
-      }, 1500);
+      }, 700);
     } catch (err) {
       alert('Failed to save remark: ' + err.message);
     } finally {

@@ -39,7 +39,7 @@ import {
   UserCheck,
   Menu
 } from 'lucide-react';
-import { api } from './api';
+import { api, syncBus } from './api';
 import SettingsModal from './SettingsModal';
 import StudentAttendanceCalendarTracker from './StudentAttendanceCalendarTracker';
 
@@ -143,14 +143,20 @@ export default function StudentPortal({ currentUser, onLogout }) {
   useEffect(() => {
     loadStudentInfo(false);
 
-    // 1. Live Background Polling every 5 seconds when tab is active
+    // 1. High-Speed Background Polling (every 3 seconds when tab is active)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         loadStudentInfo(true);
       }
-    }, 5000);
+    }, 3000);
 
-    // 2. Instant silent sync when user switches back to browser tab
+    // 2. Instant Cross-Tab & Cross-Component Real-Time Event Sync
+    const unsubscribe = syncBus.subscribe((evt) => {
+      // Trigger instant non-blocking silent re-fetch when any teacher/admin mutation occurs
+      loadStudentInfo(true);
+    });
+
+    // 3. Instant silent sync when user switches back to browser tab
     const handleFocus = () => {
       loadStudentInfo(true);
     };
@@ -165,6 +171,7 @@ export default function StudentPortal({ currentUser, onLogout }) {
 
     return () => {
       clearInterval(pollInterval);
+      unsubscribe();
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };

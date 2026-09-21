@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { api } from './api';
+import { api, syncBus } from './api';
 import { 
   CalendarCheck, 
   Clock, 
@@ -53,11 +53,20 @@ export default function StudentGovernanceAdminView({
   const [submittingReg, setSubmittingReg] = useState(false);
 
   useEffect(() => {
-    loadGovernanceData();
+    loadGovernanceData(false);
+
+    // Instant multi-tab event sync
+    const unsubscribe = syncBus.subscribe((evt) => {
+      loadGovernanceData(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  const loadGovernanceData = async () => {
-    setLoading(true);
+  const loadGovernanceData = async (silent = false) => {
+    if (!silent) setLoading(true);
     setActionSuccessMsg('');
     try {
       const [lRes, rRes] = await Promise.all([
@@ -69,7 +78,7 @@ export default function StudentGovernanceAdminView({
     } catch (err) {
       console.error('Error loading student governance data:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -126,6 +135,15 @@ export default function StudentGovernanceAdminView({
   // 1-Click Quick Decision for Leave
   const handleQuickLeaveDecision = async (leaveItem, decision) => {
     const remarkText = decision === 'Approved' ? 'Leave approved by Administrator' : 'Rejected by Administrator';
+    // Optimistic local update
+    setLeaves(prev => prev.map(l =>
+      l.id === leaveItem.id
+        ? { ...l, status: decision, teacher_remarks: remarkText, admin_remarks: remarkText, reviewed_at: new Date().toISOString() }
+        : l
+    ));
+    setActionSuccessMsg(`✓ Leave application #${leaveItem.id} has been marked as ${decision.toUpperCase()}!`);
+    setTimeout(() => setActionSuccessMsg(''), 4000);
+
     try {
       await api.reviewLeave(leaveItem.id, {
         status: decision,
@@ -144,18 +162,26 @@ export default function StudentGovernanceAdminView({
         }).catch(() => {});
       }
 
-      setActionSuccessMsg(`✓ Leave application #${leaveItem.id} has been marked as ${decision.toUpperCase()}!`);
-      setTimeout(() => setActionSuccessMsg(''), 4000);
-      await loadGovernanceData();
+      loadGovernanceData(true);
       if (onRefreshAll) onRefreshAll();
     } catch (err) {
       alert('Error updating leave decision: ' + err.message);
+      loadGovernanceData(true);
     }
   };
 
   // 1-Click Quick Decision for Attendance Regularization
   const handleQuickRegDecision = async (regItem, decision) => {
     const remarkText = decision === 'Approved' ? 'Dispute regularized & approved by Administrator' : 'Dispute rejected by Administrator';
+    // Optimistic local update
+    setRegularizations(prev => prev.map(r =>
+      r.id === regItem.id
+        ? { ...r, status: decision, teacher_remarks: remarkText, admin_remarks: remarkText, reviewed_at: new Date().toISOString() }
+        : r
+    ));
+    setActionSuccessMsg(`✓ Attendance dispute #${regItem.id} has been ${decision.toUpperCase()} and student attendance synchronized!`);
+    setTimeout(() => setActionSuccessMsg(''), 4000);
+
     try {
       await api.reviewAttendanceRegularization(regItem.id, {
         status: decision,
@@ -174,12 +200,11 @@ export default function StudentGovernanceAdminView({
         }).catch(() => {});
       }
 
-      setActionSuccessMsg(`✓ Attendance dispute #${regItem.id} has been ${decision.toUpperCase()} and student attendance synchronized!`);
-      setTimeout(() => setActionSuccessMsg(''), 4000);
-      await loadGovernanceData();
+      loadGovernanceData(true);
       if (onRefreshAll) onRefreshAll();
     } catch (err) {
       alert('Error updating regularization decision: ' + err.message);
+      loadGovernanceData(true);
     }
   };
 

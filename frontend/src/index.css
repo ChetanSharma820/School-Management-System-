@@ -411,6 +411,7 @@
 
 html {
   scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -420,6 +421,22 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU Hardware Acceleration for Instant Real-Time UI Rendering & 60fps Scrolling */
+.portal-data-table,
+.portal-section-card,
+.timetable-grid,
+.remarks-timeline,
+.modal-overlay,
+.modal-content,
+.live-notification-dropdown,
+.table-wrapper,
+.badge,
+.badge-live-pulse {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* Sleek Modern Custom Scrollbar */

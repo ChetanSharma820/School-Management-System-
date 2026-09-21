@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { api, calculateSalaryBreakdown } from './api';
+import { api, calculateSalaryBreakdown, syncBus } from './api';
 import ExcelStudio from './ExcelStudio';
 import SearchableStudentSelect from './SearchableStudentSelect';
 import SearchableTeacherSelect from './SearchableTeacherSelect';
@@ -334,18 +334,23 @@ export default function App() {
     bank_account_last4: '5678'
   });
 
-  // Load Initial Data whenever activeTab or currentUser changes, plus 5s Real-Time Polling
+  // Load Initial Data whenever activeTab or currentUser changes, plus 3s Real-Time Polling & Event Bus
   useEffect(() => {
     loadAllData(false);
 
-    // 1. Live Background Polling every 5 seconds when tab is active
+    // 1. High-Speed Background Polling (every 3 seconds when tab is active)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         loadAllData(true);
       }
-    }, 5000);
+    }, 3000);
 
-    // 2. Instant silent sync when user switches back to browser tab
+    // 2. Instant Cross-Tab & Cross-Component Real-Time Event Sync
+    const unsubscribe = syncBus.subscribe((evt) => {
+      loadAllData(true);
+    });
+
+    // 3. Instant silent sync when user switches back to browser tab
     const handleFocus = () => {
       loadAllData(true);
     };
@@ -360,6 +365,7 @@ export default function App() {
 
     return () => {
       clearInterval(pollInterval);
+      unsubscribe();
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };

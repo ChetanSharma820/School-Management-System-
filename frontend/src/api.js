@@ -467,9 +467,96 @@ function formatPostgrestQuery(searchStr, tableName) {
   return data;
 }
 
+// High-Performance Cross-Tab & Cross-Component Real-Time Sync Bus
+export const syncBus = {
+  channel: typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('greenwood_live_sync') : null,
+  emit(type, payload = {}) {
+    try {
+      if (this.channel) {
+        this.channel.postMessage({ type, payload, timestamp: Date.now() });
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('greenwood_live_sync', { detail: { type, payload, timestamp: Date.now() } }));
+      }
+    } catch (e) {
+      console.warn('Sync emit error:', e);
+    }
+  },
+  subscribe(callback) {
+    if (typeof window === 'undefined') return () => {};
+    const handleBroadcast = (e) => {
+      if (e.data) callback(e.data);
+    };
+    const handleCustom = (e) => {
+      if (e.detail) callback(e.detail);
+    };
+    if (this.channel) {
+      this.channel.addEventListener('message', handleBroadcast);
+    }
+    window.addEventListener('greenwood_live_sync', handleCustom);
+    return () => {
+      if (this.channel) {
+        this.channel.removeEventListener('message', handleBroadcast);
+      }
+      window.removeEventListener('greenwood_live_sync', handleCustom);
+    };
+  }
+};
+
+// High-Speed In-Memory Cache with Smart Dynamic Invalidation
+const apiCache = new Map();
+
+export function invalidateCache(pattern = '') {
+  if (!pattern) {
+    apiCache.clear();
+    return;
+  }
+  const cleanPat = pattern.toLowerCase();
+  for (const key of apiCache.keys()) {
+    if (key.toLowerCase().includes(cleanPat)) {
+      apiCache.delete(key);
+    }
+  }
+}
+
+function getCacheTTL(endpoint) {
+  // Fast 2s TTL for dynamic tables so background polling is instant and low-overhead
+  if (endpoint.includes('leaves') || endpoint.includes('remarks') || endpoint.includes('regularization') || endpoint.includes('attendance') || endpoint.includes('grades')) {
+    return 2000;
+  }
+  // 6s TTL for slower-changing data like roster, classes, timetable, fees, salaries
+  return 6000;
+}
+
 async function request(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const cacheKey = `${method}:${endpoint}`;
+
+  // If this is a mutation (POST, PATCH, DELETE), immediately bust relevant cache and broadcast
+  if (method !== 'GET') {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const baseResource = cleanEndpoint.split('/')[0].split('?')[0];
+    invalidateCache(baseResource);
+    // Also clear related cross-dependencies
+    if (baseResource.includes('leave') || baseResource.includes('regularization') || baseResource.includes('attendance')) {
+      invalidateCache('attendance');
+      invalidateCache('leave');
+      invalidateCache('regularization');
+    }
+    syncBus.emit(`${baseResource.toUpperCase()}_MUTATED`, { endpoint, method });
+  } else if (!options.noCache) {
+    // Check in-memory cache for GET
+    const cached = apiCache.get(cacheKey);
+    const ttl = getCacheTTL(endpoint);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp < ttl)) {
+      return cached.data;
+    }
+  }
+
   const isLocalEnv = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
+  let resultData = null;
   if (isLocalEnv) {
     try {
       const url = `${API_BASE_URL}${endpoint}`;
@@ -488,17 +575,30 @@ async function request(endpoint, options = {}) {
           try { data = JSON.parse(text); } catch { data = {}; }
         }
         if (Array.isArray(data) && options.method && options.method !== 'GET') {
-          return data[0] || { success: true };
+          resultData = data[0] || { success: true };
+        } else {
+          resultData = data;
         }
-        return data;
       }
     } catch (err) {
       console.warn(`Local backend unreachable for ${endpoint}, falling back to Supabase Cloud Direct API...`, err);
     }
   }
 
-  // Direct Supabase Cloud API fallback (works everywhere: local, Vercel, production)
-  return await supabaseDirectRequest(endpoint, options);
+  if (resultData === null) {
+    // Direct Supabase Cloud API fallback (works everywhere: local, Vercel, production)
+    resultData = await supabaseDirectRequest(endpoint, options);
+  }
+
+  // Store in cache if successful GET request
+  if (method === 'GET' && resultData !== null && resultData !== undefined && !resultData.code) {
+    apiCache.set(cacheKey, {
+      data: resultData,
+      timestamp: Date.now()
+    });
+  }
+
+  return resultData;
 }
 
 export const api = {
