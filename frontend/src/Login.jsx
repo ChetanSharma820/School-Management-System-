@@ -12,9 +12,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  Clock,
-  CheckCircle2,
-  Zap
+  Clock
 } from 'lucide-react';
 import { api } from './api';
 
@@ -24,7 +22,6 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [activeRoleCard, setActiveRoleCard] = useState('');
 
   const getClientFallbackUser = (rawUser) => {
     const uClean = String(rawUser || '').toLowerCase().replace(/[-_\s.]/g, '');
@@ -247,14 +244,6 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
     }
   };
 
-  const handleQuickFill = (u, p, roleName) => {
-    setUsername(u);
-    setPassword(p);
-    setActiveRoleCard(roleName);
-    setError('');
-    doLogin(u, p);
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
     doLogin(username, password);
@@ -303,50 +292,26 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
           </div>
 
           <div className="portal-features-grid">
-            <div 
-              className={`feature-pill active-student ${activeRoleCard === 'student' ? 'selected-role' : ''}`}
-              onClick={() => handleQuickFill('aarav.sharma', 'aarav.sharma@123', 'student')}
-              style={{ cursor: 'pointer' }}
-              title="Click to auto-fill & login as Student"
-            >
+            <div className="feature-pill active-student">
               <GraduationCap size={22} color="#38bdf8" />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <strong>Student Access</strong>
-                  <span style={{ fontSize: '11px', color: '#0284c7', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Quick Login</span>
-                </div>
+              <div>
+                <strong>Student Access</strong>
                 <p>Personal fees & slips, gradebook, attendance & timetables</p>
               </div>
             </div>
 
-            <div 
-              className={`feature-pill active-teacher ${activeRoleCard === 'teacher' ? 'selected-role' : ''}`}
-              onClick={() => handleQuickFill('robert.miller', 'robert.miller@123', 'teacher')}
-              style={{ cursor: 'pointer' }}
-              title="Click to auto-fill & login as Teacher"
-            >
+            <div className="feature-pill active-teacher">
               <BookOpen size={22} color="#10b981" />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <strong>Teacher Access</strong>
-                  <span style={{ fontSize: '11px', color: '#059669', background: '#d1fae5', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Quick Login</span>
-                </div>
+              <div>
+                <strong>Teacher Access</strong>
                 <p>Biometric punch, student roster, gradebook & salary slips</p>
               </div>
             </div>
 
-            <div 
-              className={`feature-pill active-admin ${activeRoleCard === 'admin' ? 'selected-role' : ''}`}
-              onClick={() => handleQuickFill('admin', 'admin123', 'admin')}
-              style={{ cursor: 'pointer' }}
-              title="Click to auto-fill & login as Admin"
-            >
+            <div className="feature-pill active-admin">
               <ShieldCheck size={22} color="#a855f7" />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <strong>Administrator Access</strong>
-                  <span style={{ fontSize: '11px', color: '#7c3aed', background: '#ede9fe', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Quick Login</span>
-                </div>
+              <div>
+                <strong>Administrator Access</strong>
                 <p>Full institutional control, enrollment, payroll & analytics</p>
               </div>
             </div>
@@ -362,7 +327,7 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
             </div>
             <h2 className="login-title">Sign In to Your Account</h2>
             <p className="login-subtitle">
-              Enter your institutional credentials or choose a quick login below.
+              Enter your institutional credentials to access your personalized workspace.
             </p>
           </div>
 
@@ -439,98 +404,10 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
               </div>
             </div>
 
-            {/* Quick 1-Click Role Login Chips */}
-            <div style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '10px',
-              padding: '10px 12px',
-              marginTop: '4px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
-                <Zap size={13} color="#f59e0b" />
-                <span>Quick Role Switcher (1-Click Test Login):</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('admin', 'admin123', 'admin')}
-                  style={{
-                    background: '#faf5ff',
-                    border: '1px solid #d8b4fe',
-                    color: '#6b21a8',
-                    padding: '6px 4px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f3e8ff'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#faf5ff'}
-                >
-                  <ShieldCheck size={13} /> Admin
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('robert.miller', 'robert.miller@123', 'teacher')}
-                  style={{
-                    background: '#ecfdf5',
-                    border: '1px solid #6ee7b7',
-                    color: '#065f46',
-                    padding: '6px 4px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#d1fae5'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#ecfdf5'}
-                >
-                  <BookOpen size={13} /> Teacher
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('aarav.sharma', 'aarav.sharma@123', 'student')}
-                  style={{
-                    background: '#eff6ff',
-                    border: '1px solid #93c5fd',
-                    color: '#1e40af',
-                    padding: '6px 4px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#dbeafe'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#eff6ff'}
-                >
-                  <GraduationCap size={13} /> Student
-                </button>
-              </div>
-            </div>
-
             <button 
               type="submit" 
               className="login-submit-btn" 
               disabled={loading}
-              style={{ marginTop: '8px' }}
             >
               {loading ? (
                 <div className="btn-spinner-wrap">
@@ -550,5 +427,6 @@ export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
     </div>
   );
 }
+
 
 
