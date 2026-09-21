@@ -1,0 +1,13 @@
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+dist/
+frontend/dist/
+*.zip
+scratch_chrome_*/
+_archive_and_tests/scratch_chrome_*/
+.DS_Store
+*.log
+.tempmediaStorage/
+.system_generated/
+scratch/
