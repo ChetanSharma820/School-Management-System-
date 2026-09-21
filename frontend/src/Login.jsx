@@ -11,11 +11,12 @@ import {
   School,
   Eye,
   EyeOff,
-  KeyRound
+  KeyRound,
+  Clock
 } from 'lucide-react';
 import { api } from './api';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, sessionExpiredMessage }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -160,6 +161,27 @@ export default function Login({ onLoginSuccess }) {
               Enter your institutional credentials to access your personalized workspace.
             </p>
           </div>
+
+          {sessionExpiredMessage && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              color: '#fca5a5',
+              borderRadius: '10px',
+              padding: '12px 16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '13px',
+              fontWeight: 600,
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.12)',
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              <Clock size={20} color="#f87171" style={{ flexShrink: 0 }} />
+              <span>{sessionExpiredMessage}</span>
+            </div>
+          )}
 
           {error && (
             <div className="login-error-box">

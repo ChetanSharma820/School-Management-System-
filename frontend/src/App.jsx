@@ -63,11 +63,28 @@ export default function App() {
   // Mobile Drawer Navigation State
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Authentication & RBAC Session State
+  // Inactivity / Idle Session Timeout: 15 minutes (900,000 ms)
+  const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState('');
+
+  // Authentication & RBAC Session State (strictly validated against 15-minute inactivity limit)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('school_mgmt_user');
-      return saved ? JSON.parse(saved) : null;
+      const savedUser = localStorage.getItem('school_mgmt_user');
+      const lastActive = localStorage.getItem('greenwood_last_activity');
+      if (savedUser && lastActive) {
+        const elapsed = Date.now() - parseInt(lastActive, 10);
+        if (elapsed < INACTIVITY_TIMEOUT_MS) {
+          localStorage.setItem('greenwood_last_activity', Date.now().toString());
+          return JSON.parse(savedUser);
+        } else {
+          // Expired due to 15 minutes of inactivity
+          localStorage.removeItem('school_mgmt_user');
+          localStorage.removeItem('greenwood_last_activity');
+          return null;
+        }
+      }
+      return null;
     } catch {
       return null;
     }
@@ -85,22 +102,77 @@ export default function App() {
       return;
     }
 
+    setSessionExpiredNotice('');
     setCurrentUser(mergedUser);
     try {
       localStorage.setItem('school_mgmt_user', JSON.stringify(mergedUser));
+      localStorage.setItem('greenwood_last_activity', Date.now().toString());
     } catch (e) {
       console.error(e);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = (reason = '') => {
     setCurrentUser(null);
+    if (reason && typeof reason === 'string') {
+      setSessionExpiredNotice(reason);
+    } else {
+      setSessionExpiredNotice('');
+    }
     try {
       localStorage.removeItem('school_mgmt_user');
+      localStorage.removeItem('greenwood_last_activity');
+      sessionStorage.clear();
     } catch (e) {
       console.error(e);
     }
   };
+
+  // Active 15-Minute Inactivity / Idle Auto-Logout Listener
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let lastActivity = Date.now();
+    localStorage.setItem('greenwood_last_activity', lastActivity.toString());
+
+    let throttleTimeout = null;
+    const registerUserActivity = () => {
+      const now = Date.now();
+      lastActivity = now;
+      if (!throttleTimeout) {
+        throttleTimeout = setTimeout(() => {
+          localStorage.setItem('greenwood_last_activity', Date.now().toString());
+          throttleTimeout = null;
+        }, 2000);
+      }
+    };
+
+    // User interaction events across whole window
+    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click', 'focus'];
+    activityEvents.forEach(evt => {
+      window.addEventListener(evt, registerUserActivity, { passive: true });
+    });
+
+    // Check every 5 seconds for inactivity > 15 minutes
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const storedLast = parseInt(localStorage.getItem('greenwood_last_activity') || '0', 10);
+      const effectiveLast = Math.max(lastActivity, storedLast);
+
+      if (now - effectiveLast >= INACTIVITY_TIMEOUT_MS) {
+        clearInterval(interval);
+        handleLogout('Your session has expired due to 15 minutes of inactivity. Please sign in again to continue.');
+      }
+    }, 5000);
+
+    return () => {
+      activityEvents.forEach(evt => {
+        window.removeEventListener(evt, registerUserActivity);
+      });
+      clearInterval(interval);
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
+  }, [currentUser]);
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [students, setStudents] = useState([]);
@@ -1526,7 +1598,7 @@ export default function App() {
 
   // If user is not authenticated, show Login page
   if (!currentUser) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login onLoginSuccess={handleLoginSuccess} sessionExpiredMessage={sessionExpiredNotice} />;
   }
 
   const userRole = String(currentUser?.role || '').toLowerCase();
