@@ -94,9 +94,14 @@ export default function App() {
     // Merge any granular permissions from local overrides
     const overrides = JSON.parse(localStorage.getItem('greenwood_rbac_permissions') || '{}');
     const userOverrides = overrides[user.id] || {};
-    const mergedUser = { ...user, ...userOverrides };
+    const mergedUser = {
+      ...user,
+      ...userOverrides,
+      status: user.status || userOverrides.status || 'active',
+      portal_access: user.portal_access !== undefined ? user.portal_access : (userOverrides.portal_access !== undefined ? userOverrides.portal_access : true)
+    };
 
-    // If status is suspended or portal_access is false, block login
+    // If account was explicitly suspended in the database, block access
     if (mergedUser.status === 'suspended' || mergedUser.portal_access === false) {
       alert('Access Denied: Your account access has been suspended or restricted by the School Administrator.');
       return;
