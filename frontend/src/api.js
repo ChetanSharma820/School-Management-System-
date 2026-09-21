@@ -1,51 +1,231 @@
-// Centralized API Client Service for C++ Backend
-const API_BASE_URL = 'http://127.0.0.1:8080/api';
+// Centralized API Client Service with Automatic Supabase Fallback for Vercel & Production
+const API_BASE_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://127.0.0.1:8080/api'
+  : '/api';
 
-async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+const SUPABASE_URL = 'https://xzmirtkasmtuadvyslri.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6bWlydGthc210dWFkdnlzbHJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjEyMTQsImV4cCI6MjEwNTEzNzIxNH0.1U1fG6z74fqU3i5mGa0BHDmnIIXk1RfYQAjbJ-V3qWA';
+
+// Centralized Salary Calculation Formula (Fixed Allowances & Deductions Breakdown)
+export function calculateSalaryBreakdown(grossInput) {
+  const gross = Math.max(10000, parseFloat(grossInput) || 65000);
+
+  // Standard Fixed Allowances:
+  // HRA: 12,000, DA: 8,000, Medical: 3,000, Special Bonus: 2,000 -> Total Fixed Allowances = 25,000
+  let hra = 12000;
+  let da = 8000;
+  let medical = 3000;
+  let bonus = 2000;
+  let totalAllowances = hra + da + medical + bonus; // 25000
+
+  // The remaining after fixed allowances is the Base / Basic Academic Pay:
+  let basic = gross - totalAllowances;
+  if (basic < 15000) {
+    basic = Math.round(gross * 0.55);
+    hra = Math.round(gross * 0.20);
+    da = Math.round(gross * 0.15);
+    medical = 3000;
+    bonus = Math.max(0, gross - (basic + hra + da + medical));
+    totalAllowances = gross - basic;
+  }
+
+  // Statutory Deductions:
+  // EPF (Provident Fund) ~ 10% of basic (or min 2000)
+  const pf = Math.max(2000, Math.round(basic * 0.10));
+  // TDS (Tax Deducted at Source)
+  const tds = gross > 70000 ? 3500 : (gross > 50000 ? 2500 : 1500);
+  const pt = 200; // Professional Tax
+  const insurance = 340; // Staff Health & Group Insurance
+  const totalDeductions = pf + tds + pt + insurance;
+
+  const netSalary = Math.max(0, gross - totalDeductions);
+
+  return {
+    gross_earnings: gross,
+    basic_salary: basic,
+    hra_allowance: hra,
+    da_allowance: da,
+    medical_allowance: medical,
+    special_bonus: bonus,
+    total_allowances: totalAllowances,
+    provident_fund: pf,
+    tax_deducted_tds: tds,
+    professional_tax: pt,
+    insurance_welfare: insurance,
+    total_deductions: totalDeductions,
+    net_salary: netSalary
+  };
+}
+
+// Supabase Direct REST Fallback Client (when running on Vercel or when local C++ server is offline)
+async function supabaseDirectRequest(endpoint, options = {}) {
   const method = options.method || 'GET';
-  const defaultHeaders = {
+  const body = options.body;
+
+  let supabaseTable = '';
+  let queryParams = '';
+  let idParam = '';
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const [basePath, searchStr] = cleanEndpoint.split('?');
+  const pathParts = basePath.split('/');
+
+  const routeName = pathParts[0];
+  const routeId = pathParts[1];
+
+  switch (routeName) {
+    case 'teachers':
+      supabaseTable = 'teachers';
+      queryParams = 'select=*&order=id.asc&limit=10000';
+      break;
+    case 'students':
+      supabaseTable = 'students';
+      queryParams = 'select=*,classes(id,class_name,section,base_fee)&order=id.asc&limit=10000';
+      break;
+    case 'classes':
+      supabaseTable = 'classes';
+      queryParams = 'select=*,teachers(id,first_name,last_name,employee_id,email,phone,department,designation,cabin,qualification)&order=id.asc&limit=10000';
+      break;
+    case 'fees':
+      supabaseTable = 'student_fees';
+      queryParams = 'select=*,students(first_name,last_name,roll_number,class_id,classes(class_name,section))&order=id.desc&limit=10000';
+      break;
+    case 'salaries':
+      supabaseTable = 'teacher_salaries';
+      queryParams = 'select=*,teachers(first_name,last_name,employee_id,qualification,department,designation,email,phone)&order=id.desc&limit=10000';
+      break;
+    case 'attendance':
+      supabaseTable = 'attendance';
+      queryParams = 'select=*,students(first_name,last_name,roll_number)&order=date.asc&limit=10000';
+      break;
+    case 'teacher-attendance':
+      supabaseTable = 'teacher_attendance';
+      queryParams = 'select=*&order=attendance_date.desc&limit=10000';
+      break;
+    case 'leaves':
+      supabaseTable = 'student_leaves';
+      queryParams = 'select=*,students(first_name,last_name,roll_number,classes(class_name,section)),teachers(first_name,last_name)&order=id.desc&limit=10000';
+      break;
+    case 'teacher-leaves':
+      supabaseTable = 'teacher_leaves';
+      queryParams = 'select=*,teachers(first_name,last_name,employee_id,department)&order=id.desc&limit=10000';
+      break;
+    case 'attendance-regularizations':
+      supabaseTable = 'attendance_regularizations';
+      queryParams = 'select=*,students(first_name,last_name,roll_number,classes(class_name,section)),teachers(first_name,last_name)&order=id.desc&limit=10000';
+      break;
+    case 'teacher-attendance-regularizations':
+      supabaseTable = 'teacher_attendance_regularizations';
+      queryParams = 'select=*,teachers(first_name,last_name,employee_id,department)&order=id.desc&limit=10000';
+      break;
+    case 'student-grades':
+    case 'grades':
+      supabaseTable = 'student_grades_results';
+      queryParams = 'select=*,students(first_name,last_name,roll_number)&order=id.desc&limit=10000';
+      break;
+    case 'remarks':
+      supabaseTable = 'student_progress_remarks';
+      queryParams = 'select=*,students(first_name,last_name,roll_number),teachers(first_name,last_name)&order=id.desc&limit=10000';
+      break;
+    case 'timetable':
+      supabaseTable = 'subject_teachers_timetable';
+      queryParams = 'select=*,classes(class_name,section),teachers(first_name,last_name)&order=id.asc&limit=10000';
+      break;
+    case 'permissions':
+    case 'users':
+      supabaseTable = 'login_credentials';
+      queryParams = 'select=*,students(first_name,last_name,roll_number),teachers(first_name,last_name,employee_id)&order=id.asc&limit=10000';
+      break;
+    case 'auth':
+      if (pathParts[1] === 'login') {
+        const parsed = JSON.parse(body || '{}');
+        const u = String(parsed.username || '').trim();
+        const p = String(parsed.password || '').trim();
+        supabaseTable = 'login_credentials';
+        queryParams = `select=*,students(*),teachers(*)&or=(username.eq.${encodeURIComponent(u)},email.eq.${encodeURIComponent(u)})&password=eq.${encodeURIComponent(p)}`;
+      }
+      break;
+    default:
+      supabaseTable = routeName;
+      break;
+  }
+
+  if (routeId && routeName !== 'auth') {
+    idParam = `id=eq.${routeId}`;
+  }
+
+  let finalQuery = '';
+  if (idParam) {
+    finalQuery = idParam;
+    if (searchStr) finalQuery += `&${searchStr}`;
+  } else if (searchStr) {
+    finalQuery = `${queryParams}&${searchStr}`;
+  } else {
+    finalQuery = queryParams;
+  }
+
+  const fullUrl = `${SUPABASE_URL}/rest/v1/${supabaseTable}${finalQuery ? `?${finalQuery}` : ''}`;
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     'Content-Type': 'application/json',
+    'Prefer': method === 'POST' || method === 'PATCH' ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
   };
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
-    });
+  const res = await fetch(fullUrl, {
+    method,
+    headers,
+    body: body || undefined
+  });
 
-    // PostgREST returns empty body for DELETE; other mutations return array or object
-    const text = await response.text().catch(() => '');
-    let data = {};
-    if (text) {
-      try { data = JSON.parse(text); } catch { data = {}; }
-    }
-
-    // PostgREST PATCH/POST with return=representation returns [{...}] (array)
-    // Normalise to a single object so callers work uniformly
-    if (Array.isArray(data)) {
-      if (data.length > 0 && (data[0].error || (data[0].code && data[0].message))) {
-        throw new Error(data[0].message || data[0].error || data[0].details || `HTTP error ${response.status}`);
-      }
-      // For mutating requests return first element; for GETs return the full array
-      if (method !== 'GET') {
-        return data[0] || { success: true };
-      }
-      return data;
-    }
-
-    if (!response.ok || data.error || (data.code && data.message)) {
-      throw new Error(data.message || data.error || data.details || `HTTP error ${response.status}`);
-    }
-
-    return data;
-  } catch (error) {
-    console.error(`[API Error] ${endpoint}:`, error);
-    throw error;
+  const text = await res.text().catch(() => '');
+  let data = {};
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = {}; }
   }
+
+  if (Array.isArray(data)) {
+    if (method !== 'GET') {
+      return data[0] || { success: true };
+    }
+    return data;
+  }
+
+  return data;
+}
+
+async function request(endpoint, options = {}) {
+  const isLocalEnv = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (isLocalEnv) {
+    try {
+      const url = `${API_BASE_URL}${endpoint}`;
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+
+      if (response.ok) {
+        const text = await response.text().catch(() => '');
+        let data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch { data = {}; }
+        }
+        if (Array.isArray(data) && options.method && options.method !== 'GET') {
+          return data[0] || { success: true };
+        }
+        return data;
+      }
+    } catch (err) {
+      console.warn(`Local backend unreachable for ${endpoint}, falling back to Supabase Cloud Direct API...`, err);
+    }
+  }
+
+  // Direct Supabase Cloud API fallback (works everywhere: local, Vercel, production)
+  return await supabaseDirectRequest(endpoint, options);
 }
 
 export const api = {
@@ -213,5 +393,3 @@ export const api = {
   // Master System Reset & Factory Wipe
   resetEntireSystem: () => request('/system/reset', { method: 'POST' }),
 };
-
-

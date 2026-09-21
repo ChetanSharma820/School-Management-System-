@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { UserCheck, Check, X, UserPlus, Briefcase, Mail, Phone, Building, MapPin, Award, Clock } from 'lucide-react';
+import { UserCheck, Check, X, UserPlus, Briefcase, Mail, Phone, Building, MapPin, Award, Clock, DollarSign } from 'lucide-react';
+import { calculateSalaryBreakdown } from './api';
 
 export function AddTeacherModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -157,13 +158,52 @@ export function AddTeacherModal({ onClose, onSave }) {
             </div>
 
             <div className="form-group">
-              <label>Base Monthly Salary (₹)</label>
+              <label>Monthly Salary Package (₹) *</label>
               <input 
                 type="number" 
                 value={formData.salary_base}
                 onChange={e => setFormData({ ...formData, salary_base: parseFloat(e.target.value) || 0 })}
               />
             </div>
+
+            {(() => {
+              const preview = calculateSalaryBreakdown(formData.salary_base || 0);
+              return (
+                <div className="form-group full-width" style={{ marginTop: '-4px', marginBottom: '8px' }}>
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    fontSize: '12px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: '8px 12px'
+                  }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Gross Package</span>
+                      <strong style={{ color: '#0284c7', fontSize: '13px' }}>₹{preview.gross_earnings.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Basic Pay (Gross - 25k)</span>
+                      <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>₹{preview.basic_salary.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Fixed Allowances (HRA+DA)</span>
+                      <strong style={{ color: '#10b981', fontSize: '13px' }}>+₹{preview.total_allowances.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Deductions (EPF/TDS/PT)</span>
+                      <strong style={{ color: '#ef4444', fontSize: '13px' }}>-₹{preview.total_deductions.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Net Take-Home</span>
+                      <strong style={{ color: '#059669', fontSize: '13.5px', fontWeight: 800 }}>₹{preview.net_salary.toLocaleString()}</strong>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="form-group">
               <label>Weekly Teaching Load (Periods)</label>
@@ -368,13 +408,52 @@ export function EditTeacherModal({ teacher, onClose, onSave }) {
             </div>
 
             <div className="form-group">
-              <label>Base Monthly Salary (₹)</label>
+              <label>Monthly Salary Package (₹) *</label>
               <input 
                 type="number" 
                 value={formData.salary_base}
                 onChange={e => setFormData({ ...formData, salary_base: parseFloat(e.target.value) || 0 })}
               />
             </div>
+
+            {(() => {
+              const preview = calculateSalaryBreakdown(formData.salary_base || 0);
+              return (
+                <div className="form-group full-width" style={{ marginTop: '-4px', marginBottom: '8px' }}>
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    fontSize: '12px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: '8px 12px'
+                  }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Gross Package</span>
+                      <strong style={{ color: '#0284c7', fontSize: '13px' }}>₹{preview.gross_earnings.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Basic Pay (Gross - 25k)</span>
+                      <strong style={{ color: 'var(--text-main)', fontSize: '13px' }}>₹{preview.basic_salary.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Fixed Allowances (HRA+DA)</span>
+                      <strong style={{ color: '#10b981', fontSize: '13px' }}>+₹{preview.total_allowances.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Deductions (EPF/TDS/PT)</span>
+                      <strong style={{ color: '#ef4444', fontSize: '13px' }}>-₹{preview.total_deductions.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '11px' }}>Net Take-Home</span>
+                      <strong style={{ color: '#059669', fontSize: '13.5px', fontWeight: 800 }}>₹{preview.net_salary.toLocaleString()}</strong>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="form-group">
               <label>Weekly Teaching Load (Periods)</label>

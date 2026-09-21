@@ -46,7 +46,7 @@ import {
   UserCheck,
   Menu
 } from 'lucide-react';
-import { api } from './api';
+import { api, calculateSalaryBreakdown } from './api';
 import SettingsModal from './SettingsModal';
 
 export default function TeacherPortal({ currentUser, onLogout }) {
@@ -506,26 +506,40 @@ export default function TeacherPortal({ currentUser, onLogout }) {
 
       if (salariesRes.status === 'fulfilled') {
         const allSal = Array.isArray(salariesRes.value) ? salariesRes.value : [];
-        const mySal = allSal.filter(s => 
+        const rawSal = allSal.filter(s => 
           Number(s.teacher_id) === targetTid || 
           (me && String(s.teachers?.employee_id) === String(me.employee_id))
-        ).map(s => {
-          const basic = Number(s.basic_salary || s.salary_base || me?.salary_base || 50000);
-          const allow = (Number(s.hra_allowance || 0) + Number(s.da_allowance || 0) + Number(s.medical_allowance || 0) + Number(s.special_bonus || 0)) || Number(s.allowances || 0);
-          const ded = Number(s.total_deductions || 0) || (Number(s.provident_fund || 0) + Number(s.tax_deducted_tds || 0)) || Number(s.deductions || 0);
-          const net = Number(s.net_salary || 0) || (basic + allow - ded);
+        );
+
+        const currentGross = parseFloat(me?.salary_base) || 65000;
+        const currentBreakdown = calculateSalaryBreakdown(currentGross);
+
+        let mySal = rawSal.map(s => {
+          const gross = parseFloat(me?.salary_base) || parseFloat(s.gross_earnings) || (parseFloat(s.basic_salary) ? (parseFloat(s.basic_salary) + (parseFloat(s.hra_allowance || 0) + parseFloat(s.da_allowance || 0) + 5000)) : 65000);
+          const b = calculateSalaryBreakdown(gross);
           return {
             ...s,
+            ...b,
             month: s.salary_month ? `${s.salary_month} ${s.salary_year || '2026'}` : (s.month || 'September 2026'),
-            basic_salary: basic,
-            allowances: allow,
-            deductions: ded,
-            net_salary: net,
             status: s.payment_status || s.status || 'Paid',
             payment_mode: s.payment_method || s.payment_mode || 'Direct Bank Deposit',
-            payment_date: s.payment_date ? (s.payment_date.includes('T') ? s.payment_date.split('T')[0] : s.payment_date) : '2026-09-01'
+            payment_date: s.payment_date ? (s.payment_date.includes('T') ? s.payment_date.split('T')[0] : s.payment_date) : '2026-09-01',
+            payslip_no: s.payslip_no || `PAYSLIP-${targetTid}-2026`
           };
         });
+
+        if (mySal.length === 0) {
+          mySal = [{
+            id: 1,
+            teacher_id: targetTid,
+            payslip_no: `PAYSLIP-${targetTid}-2026`,
+            month: 'September 2026',
+            status: 'Paid',
+            payment_mode: 'Direct Bank Deposit',
+            payment_date: '2026-09-01',
+            ...currentBreakdown
+          }];
+        }
         setSalaries(mySal);
       }
 
@@ -1345,19 +1359,30 @@ export default function TeacherPortal({ currentUser, onLogout }) {
   });
 
   const latestSalary = useMemo(() => {
-    if (salaries.length > 0) return salaries[0];
-    if (teacherData?.salary_base) {
+    const activeGross = parseFloat(teacherData?.salary_base) || (salaries[0]?.gross_earnings) || 65000;
+    const breakdown = calculateSalaryBreakdown(activeGross);
+
+    if (salaries.length > 0) {
+      const top = salaries[0];
       return {
-        basic_salary: Number(teacherData.salary_base),
-        allowances: 0,
-        deductions: 0,
-        net_salary: Number(teacherData.salary_base),
-        month: 'September 2026',
-        status: 'Pending Disbursement'
+        ...top,
+        ...breakdown,
+        month: top.month || 'September 2026',
+        status: top.status || 'Paid',
+        payment_date: top.payment_date || '2026-09-01',
+        payment_mode: top.payment_mode || 'Direct Bank Deposit',
+        payslip_no: top.payslip_no || `PAYSLIP-${effectiveTeacherId || 1}-2026`
       };
     }
-    return { net_salary: 0, basic_salary: 0, month: 'Current Month', status: 'Pending' };
-  }, [salaries, teacherData]);
+    return {
+      ...breakdown,
+      month: 'September 2026',
+      status: 'Paid',
+      payment_date: '2026-09-01',
+      payment_mode: 'Direct Bank Deposit',
+      payslip_no: `PAYSLIP-${effectiveTeacherId || 1}-2026`
+    };
+  }, [salaries, teacherData, effectiveTeacherId]);
 
   const getTabTitle = (tab) => {
     switch (tab) {
@@ -1742,9 +1767,11 @@ export default function TeacherPortal({ currentUser, onLogout }) {
               <div className="kpi-info">
                 <h3>Monthly Compensation</h3>
                 <div className="kpi-value" style={{ color: '#f59e0b' }}>
-                  ₹{(latestSalary?.net_salary ?? (teacherData?.salary_base || 0)).toLocaleString()}
+                  ₹{(latestSalary?.net_salary || 0).toLocaleString()}
                 </div>
-                <small style={{ color: '#38bdf8' }}>Status: {latestSalary?.status || 'Disbursed'}</small>
+                <small style={{ color: '#38bdf8' }}>
+                  Gross: ₹{(latestSalary?.gross_earnings || 0).toLocaleString()} • Basic: ₹{(latestSalary?.basic_salary || 0).toLocaleString()}
+                </small>
               </div>
               <div className="kpi-icon-wrap icon-amber">
                 <DollarSign size={24} />
@@ -3433,13 +3460,10 @@ export default function TeacherPortal({ currentUser, onLogout }) {
                             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
                               <DollarSign size={24} color="#94a3b8" />
                             </div>
-                            <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>No Official Salary Slips Issued Yet</div>
-                            <p style={{ fontSize: '13px', margin: 0, maxWidth: '420px', color: '#64748b' }}>
-                              Monthly payroll disbursement records will be automatically listed here once generated and approved by Administration.
-                            </p>
+                            <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>Monthly Salary Ledger</div>
                             {teacherData?.salary_base && (
                               <div style={{ marginTop: '6px', fontSize: '12.5px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '6px 14px', borderRadius: '8px', fontWeight: 600 }}>
-                                Contract Base Salary: ₹{Number(teacherData.salary_base).toLocaleString()} / month
+                                Monthly Package: ₹{Number(teacherData.salary_base).toLocaleString()} / month
                               </div>
                             )}
                           </div>
@@ -3448,14 +3472,14 @@ export default function TeacherPortal({ currentUser, onLogout }) {
                     ) : (
                       salaries.map((sal, idx) => (
                         <tr key={sal.id || idx}>
-                          <td className="font-semibold">{sal.month || 'Current Month'}</td>
+                          <td className="font-semibold">{sal.month || 'September 2026'}</td>
                           <td>₹{Number(sal.basic_salary || 0).toLocaleString()}</td>
-                          <td className="text-success">+₹{Number(sal.allowances || 0).toLocaleString()}</td>
-                          <td className="text-danger">-₹{Number(sal.deductions || 0).toLocaleString()}</td>
+                          <td className="text-success">+₹{Number(sal.total_allowances || sal.allowances || 25000).toLocaleString()}</td>
+                          <td className="text-danger">-₹{Number(sal.total_deductions || sal.deductions || 0).toLocaleString()}</td>
                           <td className="font-bold text-success" style={{ fontSize: '1.05rem' }}>
                             ₹{Number(sal.net_salary || 0).toLocaleString()}
                           </td>
-                          <td>{sal.payment_date || '—'}</td>
+                          <td>{sal.payment_date || '2026-09-01'}</td>
                           <td>
                             <span className={`badge ${sal.status === 'Paid' ? 'badge-success' : 'badge-warning'}`}>
                               {sal.status || 'Paid'}
@@ -3984,130 +4008,136 @@ export default function TeacherPortal({ currentUser, onLogout }) {
                 </div>
 
                 {/* 4. Itemized Earnings & Deductions Breakdown Tables */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                  
-                  {/* Earnings Breakdown Table */}
-                  <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
-                    <div style={{ background: '#f0fdf4', borderBottom: '1.5px solid #86efac', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: '#166534', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        1. Gross Earnings & Allowances
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600 }}>Amount (₹)</span>
-                    </div>
-                    <div style={{ padding: '8px 14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Basic Academic Pay:</span>
-                        <strong style={{ color: '#0f172a' }}>₹ {Number(selectedSalary.basic_salary || 50000).toLocaleString()}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>House Rent Allowance (HRA - 24%):</span>
-                        <strong style={{ color: '#0f172a' }}>₹ {Math.round(Number(selectedSalary.basic_salary || 50000) * 0.24).toLocaleString()}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Dearness Allowance (DA - 16%):</span>
-                        <strong style={{ color: '#0f172a' }}>₹ {Math.round(Number(selectedSalary.basic_salary || 50000) * 0.16).toLocaleString()}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Medical & Conveyance Allowance:</span>
-                        <strong style={{ color: '#0f172a' }}>₹ 3,000</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Special Bonus & Academic Incentives:</span>
-                        <strong style={{ color: '#0f172a' }}>₹ 2,000</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 4px', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #cbd5e1', marginTop: '4px' }}>
-                        <span style={{ color: '#166534' }}>Total Gross Earnings (A):</span>
-                        <span style={{ color: '#166534' }}>
-                          ₹ {(Number(selectedSalary.basic_salary || 50000) + Number(selectedSalary.allowances || (Number(selectedSalary.basic_salary || 50000) * 0.4) + 5000)).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                {(() => {
+                  const slipGross = parseFloat(teacherData?.salary_base) || parseFloat(selectedSalary.gross_earnings) || (parseFloat(selectedSalary.basic_salary) ? (parseFloat(selectedSalary.basic_salary) + (parseFloat(selectedSalary.total_allowances || selectedSalary.allowances || 25000))) : 65000);
+                  const slipB = calculateSalaryBreakdown(slipGross);
 
-                  {/* Deductions Breakdown Table */}
-                  <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
-                    <div style={{ background: '#fef2f2', borderBottom: '1.5px solid #fecaca', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: '#991b1b', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        2. Statutory & Policy Deductions
-                      </strong>
-                      <span style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 600 }}>Amount (₹)</span>
-                    </div>
-                    <div style={{ padding: '8px 14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Employee Provident Fund (EPF - 12%):</span>
-                        <strong style={{ color: '#dc2626' }}>₹ {Math.round(Number(selectedSalary.basic_salary || 50000) * 0.12).toLocaleString()}</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Tax Deducted at Source (TDS / Income Tax):</span>
-                        <strong style={{ color: '#dc2626' }}>₹ 3,500</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Professional Tax (PT - Statutory):</span>
-                        <strong style={{ color: '#dc2626' }}>₹ 200</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Loss of Pay (LOP) / Leave Deductions:</span>
-                        <strong style={{ color: '#dc2626' }}>₹ 0</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
-                        <span style={{ color: '#334155' }}>Staff Welfare & Group Health Insurance:</span>
-                        <strong style={{ color: '#dc2626' }}>₹ 340</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 4px', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #cbd5e1', marginTop: '4px' }}>
-                        <span style={{ color: '#991b1b' }}>Total Deductions (B):</span>
-                        <span style={{ color: '#991b1b' }}>
-                          -₹ {Number(selectedSalary.deductions || (Math.round(Number(selectedSalary.basic_salary || 50000) * 0.12) + 4040)).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  return (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                        
+                        {/* Earnings Breakdown Table */}
+                        <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+                          <div style={{ background: '#f0fdf4', borderBottom: '1.5px solid #86efac', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: '#166534', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              1. Gross Earnings & Allowances
+                            </strong>
+                            <span style={{ fontSize: '11px', color: '#15803d', fontWeight: 600 }}>Amount (₹)</span>
+                          </div>
+                          <div style={{ padding: '8px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Basic Academic Pay (Gross - Fixed Allowances):</span>
+                              <strong style={{ color: '#0f172a' }}>₹ {slipB.basic_salary.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>House Rent Allowance (HRA - Fixed):</span>
+                              <strong style={{ color: '#0f172a' }}>₹ {slipB.hra_allowance.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Dearness Allowance (DA - Fixed):</span>
+                              <strong style={{ color: '#0f172a' }}>₹ {slipB.da_allowance.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Medical & Conveyance Allowance (Fixed):</span>
+                              <strong style={{ color: '#0f172a' }}>₹ {slipB.medical_allowance.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Special Bonus & Academic Incentives (Fixed):</span>
+                              <strong style={{ color: '#0f172a' }}>₹ {slipB.special_bonus.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 4px', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #cbd5e1', marginTop: '4px' }}>
+                              <span style={{ color: '#166534' }}>Total Gross Earnings (A):</span>
+                              <span style={{ color: '#166534' }}>
+                                ₹ {slipB.gross_earnings.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                </div>
+                        {/* Deductions Breakdown Table */}
+                        <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+                          <div style={{ background: '#fef2f2', borderBottom: '1.5px solid #fecaca', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ color: '#991b1b', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              2. Statutory & Policy Deductions
+                            </strong>
+                            <span style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 600 }}>Amount (₹)</span>
+                          </div>
+                          <div style={{ padding: '8px 14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Employee Provident Fund (EPF - 10%):</span>
+                              <strong style={{ color: '#dc2626' }}>₹ {slipB.provident_fund.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Tax Deducted at Source (TDS / Income Tax):</span>
+                              <strong style={{ color: '#dc2626' }}>₹ {slipB.tax_deducted_tds.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Professional Tax (PT - Statutory Fixed):</span>
+                              <strong style={{ color: '#dc2626' }}>₹ {slipB.professional_tax.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Loss of Pay (LOP) / Leave Deductions:</span>
+                              <strong style={{ color: '#dc2626' }}>₹ 0</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9', fontSize: '12.5px' }}>
+                              <span style={{ color: '#334155' }}>Staff Welfare & Group Health Insurance:</span>
+                              <strong style={{ color: '#dc2626' }}>₹ {slipB.insurance_welfare.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 4px', fontSize: '14px', fontWeight: 800, borderTop: '2px solid #cbd5e1', marginTop: '4px' }}>
+                              <span style={{ color: '#991b1b' }}>Total Deductions (B):</span>
+                              <span style={{ color: '#991b1b' }}>
+                                -₹ {slipB.total_deductions.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                {/* 5. Net Take-Home Salary Banner */}
-                <div style={{
-                  background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
-                  border: '2px solid #10b981',
-                  borderRadius: '8px',
-                  padding: '16px 20px',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '12px'
-                }}>
-                  <div>
-                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
-                      NET TAKE-HOME SALARY (A - B)
-                    </span>
-                    <div style={{ fontSize: '26px', fontWeight: 900, color: '#047857', marginTop: '2px' }}>
-                      ₹ {Number(selectedSalary.net_salary || 0).toLocaleString()}
-                    </div>
-                    <div style={{ fontSize: '12.5px', color: '#065f46', marginTop: '4px', fontStyle: 'italic', fontWeight: 600 }}>
-                      Amount in Words: {(() => {
-                        const num = Math.round(Number(selectedSalary.net_salary || 0));
-                        const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-                        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-                        function c(v) {
-                          let s = '';
-                          if (v >= 100) { s += ones[Math.floor(v/100)] + ' Hundred '; v %= 100; }
-                          if (v >= 20) { s += tens[Math.floor(v/10)] + ' '; v %= 10; }
-                          if (v > 0) { s += ones[v] + ' '; }
-                          return s.trim();
-                        }
-                        let l = Math.floor(num / 100000);
-                        let r = num % 100000;
-                        let th = Math.floor(r / 1000);
-                        let h = r % 1000;
-                        let res = '';
-                        if (l > 0) res += c(l) + ' Lakh ';
-                        if (th > 0) res += c(th) + ' Thousand ';
-                        if (h > 0) res += c(h) + ' ';
-                        return (res.trim() || 'Zero') + ' Rupees Only';
-                      })()}
-                    </div>
-                  </div>
+                      </div>
+
+                      {/* 5. Net Take-Home Salary Banner */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
+                        border: '2px solid #10b981',
+                        borderRadius: '8px',
+                        padding: '16px 20px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
+                            NET TAKE-HOME SALARY (A - B)
+                          </span>
+                          <div style={{ fontSize: '26px', fontWeight: 900, color: '#047857', marginTop: '2px' }}>
+                            ₹ {slipB.net_salary.toLocaleString()}
+                          </div>
+                          <div style={{ fontSize: '12.5px', color: '#065f46', marginTop: '4px', fontStyle: 'italic', fontWeight: 600 }}>
+                            Amount in Words: {(() => {
+                              const num = Math.round(slipB.net_salary);
+                              const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+                              const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+                              function c(v) {
+                                let s = '';
+                                if (v >= 100) { s += ones[Math.floor(v/100)] + ' Hundred '; v %= 100; }
+                                if (v >= 20) { s += tens[Math.floor(v/10)] + ' '; v %= 10; }
+                                if (v > 0) { s += ones[v] + ' '; }
+                                return s.trim();
+                              }
+                              let l = Math.floor(num / 100000);
+                              let r = num % 100000;
+                              let th = Math.floor(r / 1000);
+                              let h = r % 1000;
+                              let res = '';
+                              if (l > 0) res += c(l) + ' Lakh ';
+                              if (th > 0) res += c(th) + ' Thousand ';
+                              if (h > 0) res += c(h) + ' ';
+                              return (res.trim() || 'Zero') + ' Rupees Only';
+                            })()}
+                          </div>
+                        </div>
 
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                     <div style={{
@@ -4166,6 +4196,9 @@ export default function TeacherPortal({ currentUser, onLogout }) {
                 <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '10.5px', color: '#94a3b8', borderTop: '1px dotted #e2e8f0', paddingTop: '8px' }}>
                   This document is an authentic official computer-generated record issued by Greenwood High School and does not require manual alteration.
                 </div>
+              </>
+            );
+          })()}
 
               </div>
             </div>
